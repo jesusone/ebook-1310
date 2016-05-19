@@ -20,7 +20,7 @@ var config = require('../config');
 var ds = gcloud.datastore({
   projectId: config.get('GCLOUD_PROJECT')
 });
-var kind = 'books';
+var kind = 'chapters';
 // [END config]
 
 // Translates from Datastore's entity format to
@@ -104,6 +104,30 @@ function list (limit, token, cb) {
 }
 // [END list]
 
+/*Update books Table*/
+function update_books (id, data, cb) {
+  var kind = "books";
+  var key;
+  if (id) {
+    key = ds.key([kind, parseInt(id, 10)]);
+  } else {
+    key = ds.key(kind);
+  }
+
+  var entity = {
+    key: key,
+    data: toDatastore(data, ['description'])
+  };
+
+  ds.save(
+      entity,
+      function (err) {
+        data.id = entity.key.id;
+        cb(err, err ? null : data);
+      }
+  );
+}
+
 // Creates a new book or updates an existing book with new data. The provided
 // data is automatically translated into Datastore format. The book will be
 // queued for background processing.
@@ -147,6 +171,22 @@ function read (id, cb) {
   });
 }
 
+function read_books (id, cb) {
+  var key = ds.key(['books', parseInt(id, 10)]);
+  ds.get(key, function (err, entity) {
+    if (err) {
+      return cb(err);
+    }
+    if (!entity) {
+      return cb({
+        code: 404,
+        message: 'Not found'
+      });
+    }
+    cb(null, fromDatastore(entity));
+  });
+}
+
 function _delete (id, cb) {
   var key = ds.key([kind, parseInt(id, 10)]);
   ds.delete(key, cb);
@@ -159,6 +199,8 @@ module.exports = {
   },
   read: read,
   update: update,
+  update_books: update_books,
+  read_books: read_books,
   delete: _delete,
   list: list
 };

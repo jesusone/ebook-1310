@@ -27,6 +27,9 @@ app.set('trust proxy', true);
 // Books
 app.use('/books', require('./books/crud'));
 app.use('/api/books', require('./books/api'));
+app.use('/categories', require('./categories/crud'));
+app.use('/api/categories', require('./categories/api'));
+app.use('/api/chapters', require('./chapters/api'));
 
 // Redirect root to /books
 app.get('/', function (req, res) {

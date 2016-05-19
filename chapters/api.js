@@ -27,7 +27,7 @@ var router = express.Router();
 router.use(bodyParser.json());
 router.use(bodyParser.urlencoded({extended: false}));
 /**
- * GET /api/books
+ * GET /api/categories
  *
  * Retrieve a page of books (up to ten at a time).
  */
@@ -45,21 +45,47 @@ router.get('/', function list (req, res, next) {
 });
 
 /**
- * POST /api/books
+ * POST /api/categories
  *
  * Create a new book.
  */
 router.post('/', function insert (req, res, next) {
+
   getModel().create(req.body, function (err, entity) {
     if (err) {
       return next(err);
     }
+    //Update books kind
+    var books_id = entity.book_id
+    var chapter_id = entity.id
+
+    /*Query books*/
+    getModel().read_books(books_id, function (err, entity) {
+      if (err) {
+        return next(err);
+      }
+      var books = entity;
+      if(books.chapter_id.length  > 2){
+        var arr = books.chapter_id.split(",");
+        books.chapter_id = arr.map(function (val) { return +val + 1; });
+        books.chapter_id.push(chapter_id);
+      }
+      else {
+        books.chapter_id =[];
+        books.chapter_id.push(chapter_id);
+      }
+    });
+    getModel().update_books(books_id, books, function (err, entity) {
+      if (err) {
+        return next(err);
+      }
+    });
     res.json(entity);
   });
 });
 
 /**
- * GET /api/books/:id
+ * GET /api/categories/:id
  *
  * Retrieve a book.
  */
@@ -73,7 +99,7 @@ router.get('/:book', function get (req, res, next) {
 });
 
 /**
- * PUT /api/books/:id
+ * PUT /api/categories/:id
  *
  * Update a book.
  */

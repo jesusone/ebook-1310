@@ -27,7 +27,7 @@ var router = express.Router();
 router.use(bodyParser.json());
 router.use(bodyParser.urlencoded({extended: false}));
 /**
- * GET /api/books
+ * GET /api/categories
  *
  * Retrieve a page of books (up to ten at a time).
  */
@@ -45,11 +45,12 @@ router.get('/', function list (req, res, next) {
 });
 
 /**
- * POST /api/books
+ * POST /api/categories
  *
  * Create a new book.
  */
 router.post('/', function insert (req, res, next) {
+
   getModel().create(req.body, function (err, entity) {
     if (err) {
       return next(err);
@@ -59,7 +60,7 @@ router.post('/', function insert (req, res, next) {
 });
 
 /**
- * GET /api/books/:id
+ * GET /api/categories/:id
  *
  * Retrieve a book.
  */
@@ -73,7 +74,7 @@ router.get('/:book', function get (req, res, next) {
 });
 
 /**
- * PUT /api/books/:id
+ * PUT /api/categories/:id
  *
  * Update a book.
  */
