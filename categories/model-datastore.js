@@ -91,7 +91,7 @@ function toDatastore (obj, nonIndexed) {
 function list (limit, token, cb) {
   var q = ds.createQuery([kind])
     .limit(limit)
-    .order('title')
+    .order('name')
     .start(token);
 
   ds.runQuery(q, function (err, entities, nextQuery) {
@@ -152,12 +152,31 @@ function _delete (id, cb) {
   ds.delete(key, cb);
 }
 
+function list_books_by_cat_id(id,limit, token, cb) {
+
+  var q = ds.createQuery(['books'])
+      .filter('cat_id', '=' , id)
+      .limit(limit)
+      .order('cat_id');
+
+  ds.runQuery(q, function (err, entities, nextQuery) {
+    if (err) {
+      return cb(err);
+    }
+    console.log(nextQuery);
+    var hasMore = entities.length === limit ? true : false;
+    cb(null, entities.map(fromDatastore), hasMore);
+  });
+
+}
+// [END list]
 // [START exports]
 module.exports = {
   create: function (data, cb) {
     update(null, data, cb);
   },
   read: read,
+  list_books_by_cat_id: list_books_by_cat_id,
   update: update,
   delete: _delete,
   list: list

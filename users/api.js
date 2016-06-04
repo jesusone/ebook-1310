@@ -43,6 +43,18 @@ router.get('/', function list (req, res, next) {
     });
   });
 });
+/*Api Get Roles List*/
+router.get('/', function list (req, res, next) {
+  getModel().list(10, req.query.pageToken, function (err, entities, cursor) {
+    if (err) {
+      return next(err);
+    }
+    res.json({
+      items: entities,
+      nextPageToken: cursor
+    });
+  });
+});
 
 /**
  * POST /api/books
@@ -58,13 +70,23 @@ router.post('/', function insert (req, res, next) {
   });
 });
 
+/*Add Roles*/
+router.post('/roles/', function insert (req, res, next) {
+  getModel().create_roles(req.body, function (err, entity) {
+    if (err) {
+      return next(err);
+    }
+    res.json(entity);
+  });
+});
+
 /**
  * GET /api/books/:id
  *
  * Retrieve a book.
  */
-router.get('/:book', function get (req, res, next) {
-  getModel().read(req.params.book, function (err, entity) {
+router.get('/:user', function get (req, res, next) {
+  getModel().read(req.params.user, function (err, entity) {
     if (err) {
       return next(err);
     }

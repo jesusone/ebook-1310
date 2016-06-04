@@ -37,15 +37,12 @@ router.use(function (req, res, next) {
  *
  * Display a page of books (up to ten at a time).
  */
-router.get('/', function list (req, res, next) {
-  getModel().list(10, req.query.pageToken, function (err, entities, cursor) {
-    if (err) {
-      return next(err);
-    }
-    res.render('books/list.jade', {
-      books: entities,
-      nextPageToken: cursor
-    });
+router.get('/', function login (req, res, next) {
+  /*Check User Login*/
+  var eb_login = eb_login(req.body.username,req.body.password);
+  res.render('users/login.jade', {
+    books: entities,
+    nextPageToken: cursor
   });
 });
 
@@ -154,5 +151,7 @@ router.use(function handleRpcError (err, req, res, next) {
   err.response = err.message;
   next(err);
 });
+function  eb_login(username, password){
 
+}
 module.exports = router;

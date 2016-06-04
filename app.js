@@ -30,10 +30,18 @@ app.use('/api/books', require('./books/api'));
 app.use('/categories', require('./categories/crud'));
 app.use('/api/categories', require('./categories/api'));
 app.use('/api/chapters', require('./chapters/api'));
+app.use('/api/menus', require('./menus/api'));
+app.use('/api/users', require('./users/api'));
+app.use('/api/users', require('./users/api'));
+app.use('/api/quiz', require('./quiz/api'));
+app.use('/api/questions', require('./questions/api'));
+app.use('/api/orders', require('./orders/api'));
 
+/*Login Amin*/
+app.use('/users', require('./users/crud'));
 // Redirect root to /books
 app.get('/', function (req, res) {
-  res.redirect('/books');
+  res.redirect('/login');
 });
 
 // Basic 404 handler

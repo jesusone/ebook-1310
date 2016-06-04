@@ -20,6 +20,7 @@ var config = require('../config');
 var ds = gcloud.datastore({
   projectId: config.get('GCLOUD_PROJECT')
 });
+
 var kind = 'users';
 // [END config]
 
@@ -103,6 +104,22 @@ function list (limit, token, cb) {
   });
 }
 // [END list]
+// [START list]
+function list_roles (limit, token, cb) {
+  var q = ds.createQuery(['roles'])
+    .limit(limit)
+    .order('type')
+    .start(token);
+
+  ds.runQuery(q, function (err, entities, nextQuery) {
+    if (err) {
+      return cb(err);
+    }
+    var hasMore = entities.length === limit ? nextQuery.startVal : false;
+    cb(null, entities.map(fromDatastore), hasMore);
+  });
+}
+// [END list]
 
 // Creates a new book or updates an existing book with new data. The provided
 // data is automatically translated into Datastore format. The book will be
@@ -114,6 +131,29 @@ function update (id, data, cb) {
     key = ds.key([kind, parseInt(id, 10)]);
   } else {
     key = ds.key(kind);
+  }
+
+  var entity = {
+    key: key,
+    data: toDatastore(data, ['description'])
+  };
+
+  ds.save(
+    entity,
+    function (err) {
+      data.id = entity.key.id;
+      cb(err, err ? null : data);
+    }
+  );
+}
+// [END update]
+// [START update]
+function update_roles (id, data, cb) {
+  var key;
+  if (id) {
+    key = ds.key(['roles', parseInt(id, 10)]);
+  } else {
+    key = ds.key('roles');
   }
 
   var entity = {
@@ -157,9 +197,13 @@ module.exports = {
   create: function (data, cb) {
     update(null, data, cb);
   },
+  create_roles: function (data, cb) {
+    update_roles(null, data, cb);
+  },
   read: read,
   update: update,
   delete: _delete,
+  list_roles: list_roles,
   list: list
 };
 // [END exports]

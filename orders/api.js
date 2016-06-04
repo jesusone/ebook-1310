@@ -66,6 +66,7 @@ router.get('/', function list (req, res, next) {
     if (err) {
       return next(err);
     }
+
     res.json({
       items: entities,
       nextPageToken: cursor

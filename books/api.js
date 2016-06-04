@@ -26,6 +26,35 @@ var router = express.Router();
 // Automatically parse request body as JSON
 router.use(bodyParser.json());
 router.use(bodyParser.urlencoded({extended: false}));
+var multer = require('multer')({
+  inMemory: true,
+  fileSize: 5 * 1024 * 1024 // no larger than 5mb, you can change as needed.
+});
+
+router.post('/upload', multer.single('file'), function(req, res, next) {
+  if (!req.file) {
+    return res.status(400).send('No file uploaded.');
+  }
+
+  // Create a new blob in the bucket and upload the file data.
+  var blob = bucket.file(req.file.originalname);
+  var blobStream = blob.createWriteStream();
+
+  blobStream.on('error', function(err) {
+    return next(err);
+  });
+
+  blobStream.on('finish', function() {
+    // The public URL can be used to directly access the file via HTTP.
+    var publicUrl = format(
+        'https://storage.googleapis.com/%s/%s',
+        bucket.name, blob.name);
+    res.status(200).send(publicUrl);
+  });
+
+  blobStream.end(req.file.buffer);
+});
+
 /**
  * GET /api/books
  *
@@ -33,15 +62,42 @@ router.use(bodyParser.urlencoded({extended: false}));
  */
 
 router.get('/', function list (req, res, next) {
+  var user_id = req.query.user_id;
+
   getModel().list(10, req.query.pageToken, function (err, entities, cursor) {
     if (err) {
       return next(err);
     }
-    res.json({
-      items: entities,
-      nextPageToken: cursor
-    });
+    if(entities){
+
+      for(var key in entities){
+          if(entities[key].user_buy.indexOf(user_id) > -1 ){
+            entities[key].is_buy = 1;
+          }
+          else {
+            entities[key].is_buy = 0;
+          }
+      }
+      res.json({
+        items: entities,
+        nextPageToken: cursor
+      });
+      return false;
+    }
+
   });
+});
+/*Zip books file*/
+router.post('/zipbooks/:books', function zipbooks (req, res, next) {
+   var books_id =  req.params.book;
+    var zipFolder = require('zip-folder');
+    zipFolder('/libs/books', '/libs/books/archive.zip', function(err) {
+        if(err) {
+            console.log('oh no!', err);
+        } else {
+            console.log('EXCELLENT');
+        }
+    });
 });
 
 /**
@@ -64,11 +120,55 @@ router.post('/', function insert (req, res, next) {
  * Retrieve a book.
  */
 router.get('/:book', function get (req, res, next) {
+    var user_id = req.query.user_id;
   getModel().read(req.params.book, function (err, entity) {
     if (err) {
       return next(err);
     }
-    res.json(entity);
+      if(entity.user_buy.indexOf(user_id) > -1 ){
+          entity.is_buy = 1;
+          entity.links_download = 'https://ebook-1310.appspot.com/libs/books/books-'+req.params.book+'.zip';
+      }
+      else {
+          entity.is_buy = 0;
+      }
+      var books_proty  = [];
+      getModel().list_chapter_by_book_id(req.params.book,10, req.query.pageToken,function (err, entities,  cursor) {
+          if (err) {
+              return next(err);
+          }
+
+          var chapter_ids = {
+              items: entities,
+              nextPageToken: cursor
+          };
+          if(entities){
+              /*Get quiz*/
+              entity.chapter_ids = chapter_ids;
+              for(var key in entity.chapter_ids.items){
+                  //Get quiz//
+                  getModel().list_quiz(entity.chapter_ids.items[key].id,10, req.query.pageToken, function (err, quizs, cursor_page) {
+                      if (err) {
+                          return next(err);
+                      }
+                      var quiz_id = {
+                          items: quizs,
+                          nextPageToken: cursor_page
+                      };
+                      entity.chapter_ids.items[key].quiz_ids = quiz_id;
+                      /*Check user by*/
+                      books_proty.push(entity);
+
+                      /*End user by*/
+
+                  });
+
+
+              }
+          }
+      });
+
+      res.json(books_proty);
   });
 });
 

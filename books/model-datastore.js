@@ -88,10 +88,10 @@ function toDatastore (obj, nonIndexed) {
 // return per page. The ``token`` argument allows requesting additional
 // pages. The callback is invoked with ``(err, books, nextPageToken)``.
 // [START list]
-function list (limit, token, cb) {
+function list (limit,token, cb) {
   var q = ds.createQuery([kind])
     .limit(limit)
-    .order('title')
+    .order('name')
     .start(token);
 
   ds.runQuery(q, function (err, entities, nextQuery) {
@@ -102,6 +102,44 @@ function list (limit, token, cb) {
     cb(null, entities.map(fromDatastore), hasMore);
   });
 }
+function list_chapter_by_book_id(id,limit, token, cb) {
+
+  var q = ds.createQuery(['chapters'])
+    .filter('book_id', '=' ,  id)
+    .limit(limit)
+    .order('book_id')
+
+  ds.runQuery(q, function (err, entities, nextQuery) {
+    if (err) {
+      return cb(err);
+    }
+    console.log(nextQuery);
+    var hasMore = entities.length === limit ? true : false;
+     cb(null, entities.map(fromDatastore), hasMore);
+
+  });
+
+}
+
+function list_quiz(id,limit, token, cb) {
+  if(id != undefined){
+    var q = ds.createQuery(['quizs'])
+        .filter('chapter_id', '=' ,  id.toString())
+        .limit(limit)
+        .order('chapter_id');
+
+    ds.runQuery(q, function (err, entities, nextQuery) {
+      if (err) {
+        return cb(err);
+      }
+      console.log(nextQuery);
+      var hasMore = entities.length === limit ? true : false;
+      cb(null, entities.map(fromDatastore), hasMore);
+    });
+  }
+}
+
+
 // [END list]
 
 // Creates a new book or updates an existing book with new data. The provided
@@ -147,6 +185,7 @@ function read (id, cb) {
   });
 }
 
+
 function _delete (id, cb) {
   var key = ds.key([kind, parseInt(id, 10)]);
   ds.delete(key, cb);
@@ -158,6 +197,8 @@ module.exports = {
     update(null, data, cb);
   },
   read: read,
+  list_chapter_by_book_id: list_chapter_by_book_id,
+  list_quiz: list_quiz,
   update: update,
   delete: _delete,
   list: list

@@ -97,17 +97,26 @@ router.get('/:book', function get (req, res, next) {
     if (err) {
       return next(err);
     }
-    getModel().list_chapter_by_book_id(req.params.book,10, req.query.pageToken, function (err, entities,  cursor) {
-      if (err) {
-        return next(err);
-      }
-      if(entities){
-        entity.chapter_id = entities;
-        res.json(entity);
-        return false
-      }
+    /*If Parents*/
+    if(entity.is_parents == 0){
+        getModel().questions_childen(req.params.book,10, req.query.pageToken, function (err, entities,  cursor) {
+          if (err) {
+            return next(err);
+          }
+
+          if(entities){
+            entity.question_id = entities;
+              res.json(entity);
+            return false
+          }
+
+        });
+      return false
+    }
+    else {
       res.json(entity);
-    });
+    }
+
 
   });
 });

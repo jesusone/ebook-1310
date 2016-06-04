@@ -20,7 +20,7 @@ var config = require('../config');
 var ds = gcloud.datastore({
   projectId: config.get('GCLOUD_PROJECT')
 });
-var kind = 'books';
+var kind = 'questions';
 // [END config]
 
 // Translates from Datastore's entity format to
@@ -102,12 +102,13 @@ function list (limit, token, cb) {
     cb(null, entities.map(fromDatastore), hasMore);
   });
 }
-function list_chapter_by_book_id(id,limit, token, cb) {
+function questions_childen(id,limit, token, cb) {
 
-  var q = ds.createQuery(['chapters'])
-    .filter('book_id', '=' ,  id)
+  var q = ds.createQuery(['questions'])
+    .filter('parent_id', '=' ,  id)
+    .filter('is_parents', '=' ,  '1')
     .limit(limit)
-    .order('book_id')
+    .order('parent_id');
 
   ds.runQuery(q, function (err, entities, nextQuery) {
     if (err) {
@@ -175,7 +176,7 @@ module.exports = {
     update(null, data, cb);
   },
   read: read,
-  list_chapter_by_book_id: list_chapter_by_book_id,
+  questions_childen: questions_childen,
   update: update,
   delete: _delete,
   list: list

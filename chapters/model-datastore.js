@@ -91,7 +91,9 @@ function toDatastore (obj, nonIndexed) {
 function list (limit, token, cb) {
   var q = ds.createQuery([kind])
     .limit(limit)
-    .order('title')
+    .order('oderby',{
+      descending: true
+    })
     .start(token);
 
   ds.runQuery(q, function (err, entities, nextQuery) {

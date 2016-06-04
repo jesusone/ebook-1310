@@ -55,34 +55,38 @@ router.post('/', function insert (req, res, next) {
     if (err) {
       return next(err);
     }
-    //Update books kind
-    var books_id = entity.book_id
-    var chapter_id = entity.id
+    /*Update books*/
+    update_books(entity);
+    res.json(entity);
 
-    /*Query books*/
-    getModel().read_books(books_id, function (err, entity) {
-      if (err) {
-        return next(err);
-      }
-      var books = entity;
-      if(books.chapter_id.length  > 2){
-        var arr = books.chapter_id.split(",");
-        books.chapter_id = arr.map(function (val) { return +val + 1; });
-        books.chapter_id.push(chapter_id);
-      }
-      else {
-        books.chapter_id =[];
-        books.chapter_id.push(chapter_id);
-      }
     });
+
+});
+function update_books(entity){
+  //Update books kind
+  var books_id = entity.book_id
+  var chapter_id = entity.id
+  var books;
+  /*Query books*/
+  getModel().read_books(books_id, function (err, entity) {
+    if (err) {
+      return next(err);
+    }
+    books = entity;
+    if(books.chapter_id){
+      books.chapter_id = books.chapter_id+','+chapter_id;
+    }
+    else {
+      books.chapter_id =chapter_id;
+    }
     getModel().update_books(books_id, books, function (err, entity) {
       if (err) {
         return next(err);
       }
+      return entity;
     });
-    res.json(entity);
   });
-});
+}
 
 /**
  * GET /api/categories/:id
