@@ -16,9 +16,10 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var config = require('../config');
+var async = require('async');
 
 function getModel () {
-  return require('./model-' + config.get('DATA_BACKEND'));
+    return require('./model-' + config.get('DATA_BACKEND'));
 }
 
 var router = express.Router();
@@ -26,34 +27,8 @@ var router = express.Router();
 // Automatically parse request body as JSON
 router.use(bodyParser.json());
 router.use(bodyParser.urlencoded({extended: false}));
-var multer = require('multer')({
-  inMemory: true,
-  fileSize: 5 * 1024 * 1024 // no larger than 5mb, you can change as needed.
-});
 
-router.post('/upload', multer.single('file'), function(req, res, next) {
-  if (!req.file) {
-    return res.status(400).send('No file uploaded.');
-  }
 
-  // Create a new blob in the bucket and upload the file data.
-  var blob = bucket.file(req.file.originalname);
-  var blobStream = blob.createWriteStream();
-
-  blobStream.on('error', function(err) {
-    return next(err);
-  });
-
-  blobStream.on('finish', function() {
-    // The public URL can be used to directly access the file via HTTP.
-    var publicUrl = format(
-        'https://storage.googleapis.com/%s/%s',
-        bucket.name, blob.name);
-    res.status(200).send(publicUrl);
-  });
-
-  blobStream.end(req.file.buffer);
-});
 
 /**
  * GET /api/books
@@ -62,43 +37,32 @@ router.post('/upload', multer.single('file'), function(req, res, next) {
  */
 
 router.get('/', function list (req, res, next) {
-  var user_id = req.query.user_id;
-
-  getModel().list(10, req.query.pageToken, function (err, entities, cursor) {
-    if (err) {
-      return next(err);
-    }
-    if(entities){
-
-      for(var key in entities){
-          if(entities[key].user_buy.indexOf(user_id) > -1 ){
-            entities[key].is_buy = 1;
-          }
-          else {
-            entities[key].is_buy = 0;
-          }
-      }
-      res.json({
-        items: entities,
-        nextPageToken: cursor
-      });
-      return false;
-    }
-
-  });
-});
-/*Zip books file*/
-router.post('/zipbooks/:books', function zipbooks (req, res, next) {
-   var books_id =  req.params.book;
-    var zipFolder = require('zip-folder');
-    zipFolder('/libs/books', '/libs/books/archive.zip', function(err) {
-        if(err) {
-            console.log('oh no!', err);
-        } else {
-            console.log('EXCELLENT');
+    var user_id = req.query.user_id;
+    var cat_id = (req.query.cat_id) ? req.query.cat_id : '';
+    getModel().listBooks(cat_id,10, req.query.pageToken, function (err, entities, cursor) {
+        if (err) {
+            return next(err);
         }
+        if(entities){
+
+            for(var key in entities){
+                if(entities[key].user_buy.indexOf(user_id) > -1 ){
+                    entities[key].is_buy = 1;
+                }
+                else {
+                    entities[key].is_buy = 0;
+                }
+            }
+            res.json({
+                items: entities,
+                nextPageToken: cursor
+            });
+            return false;
+        }
+
     });
 });
+
 
 /**
  * POST /api/books
@@ -106,70 +70,221 @@ router.post('/zipbooks/:books', function zipbooks (req, res, next) {
  * Create a new book.
  */
 router.post('/', function insert (req, res, next) {
-  getModel().create(req.body, function (err, entity) {
-    if (err) {
-      return next(err);
-    }
-    res.json(entity);
-  });
+    getModel().create(req.body, function (err, entity) {
+        if (err) {
+            return next(err);
+        }
+        res.json(entity);
+    });
 });
+/*==============Parallel=================*/
+/*==============End=================*/
 
 /**
  * GET /api/books/:id
  *
  * Retrieve a book.
  */
+var snack = {};
+var snack2 = {};
+var snack3 = {};
+snack.BookDetailts = function(id, user_id, callback) {
+    var id = parseInt(id);
+    if (!isNaN(id)) {
+        getModel().read(id, function(err, entity) {
+            if (err) {
+                console.log(err);
+                return callback(err);
+            }
+
+                if(entity.user_buy.indexOf(user_id) > -1 ){
+                    entity.is_buy = 1;
+                    entity.links_download = 'https://ebook-1310.appspot.com/libs/books/books-'+id+'.zip';
+                }
+                else {
+                    entity.is_buy = 0;
+                }
+            console.log('===============BOOKDETAIL=====================');
+            console.log(entity);
+            console.log('=============END BOOKDETAIL===================');
+            callback(null, entity);
+        });
+    }
+
+}
+snack2.GetBookById  = function(book_id, callback) {
+
+    if (!isNaN(parseInt(book_id))) {
+
+        getModel().list_books(book_id, 10, true, function(err, entities, cursor) {
+            if (err) {
+                return callback(err);
+            }
+
+            callback(null, entities);
+        });
+    }
+}
+snack2.GetChapterById = function(id, callback) {
+    if (!isNaN(parseInt(id))) {
+        getModel().ChapterDetailByID(id, 10, true, function(err, entities, cursor) {
+            if (err) {
+                return callback(err);
+            }
+           /* console.log("======================CHAPTER=================");
+            console.log(entities);
+            console.log(id);
+            console.log("======================END CHAPTER=================");*/
+            callback(null, entities);
+        });
+    }
+}
+snack2.ChapterDetailBookID = function(id, callback){
+   getModel().DbChapterDetailByID(id, 10, true, function(err, entities, cursor){
+       if (err) {
+           return callback(err);
+       }
+    /*   console.log("======================CHAPTER LIST=================");
+       console.log(entities);
+       console.log("======================END CHAPTER LIST==================");*/
+       callback(null, entities);
+   });
+
+}
+snack2.ListQuizsByChapterID = function(id, callback){
+
+    getModel().DbQuizsByChapterId(id,10,true,function(err, entities, cursor){
+        var lisquizs = {
+            items:entities,
+            nextPageToken:false
+        }
+        callback(null, lisquizs);
+
+    });
+
+}
+
+/*snack.Chapters = function(book_id, user_id, callback) {
+    snack.BookDetailts(book_id, user_id, function(err, result) {
+        var chapter_ids = result.chapter_id.split(',');
+        var chapters = {
+            items:'',
+            nextPageToken:false
+        }
+        snack2.ChapterDetailBookID(book_id,function(err, chapterResult) {
+            if (err) {
+                return callback(err);
+            }
+            chapters.items = chapterResult;
+            result.chapter_id = chapters;
+            console.log("======================CHAPTER HUNG=================");
+            console.log(result);
+            console.log("======================END CHAPTER HUNG=================");
+            callback(null, result);
+        });
+
+
+
+    });
+}*/
+snack.Chapters = function(book_id, user_id, callback) {
+    snack.BookDetailts(book_id, user_id, function(err, result) {
+        var chapter_ids = result.chapter_id.split(',');
+        var chapters = {
+            items:'',
+            nextPageToken:false
+        }
+        snack2.ChapterDetailBookID(book_id,function(err, chapterResult) {
+            if (err) {
+                return callback(err);
+            }
+            chapters.items = chapterResult;
+            result.chapter_id = chapters;
+           /* console.log("======================CHAPTER HUNG=================");
+            console.log(result);
+            console.log("======================END CHAPTER HUNG=================");*/
+
+
+               /* console.log("======================Quizi ID BY ALL =================");
+                console.log(result.chapter_id.items[key].quiz_id);
+                console.log("======================END Quizi ID BY ALL=================");*/
+                callback(null, result);
+
+
+        });
+
+
+
+    });
+}
+snack2.ListQuiz = function(chapteritem, callback) {
+    var cat_id = chapteritem.id;
+
+    if (!isNaN(cat_id)) {
+        getModel().DbQuizsByChapterId(cat_id, 10, true, function (err, entities, cursor) {
+            var lisquizs = {
+                items: entities,
+                nextPageToken: false
+            }
+            chapteritem.quiz_id = lisquizs;
+            callback(null, chapteritem);
+
+        });
+    }
+
+}
+snack2.getInfo = function(data, callback) {
+    console.log('====================DATA =====================');
+    console.log(data);
+    callback(null, data);
+    console.log('====================DATA =====================');
+    return data;
+
+
+
+}
+
+snack.quizs = function(book_id, user_id, callback) {
+    snack.Chapters(book_id, user_id, function(err, result) {
+        var app_quiz = [];
+        var temp = result;
+         async.map(result.chapter_id.items,snack2.ListQuiz, function (err, quizsReslt) {
+            var temp = 0;
+             for(var i = 0; i < quizsReslt.length; i++){
+                 var item = quizsReslt[i];
+                 result.chapter_id.items.push(item);
+             }
+             console.log('====================quizsReslt =====================');
+             console.log(result);
+             callback(null, result);
+          });
+
+        if(err){
+            return callback(err)
+        }else {
+            return callback(null, result);
+        }
+
+    });
+}
+
+
+/*async.parallel(snack, function(err, results) {
+    console.log('REPONSIVE');
+    console.log(result);
+    res.json(results);
+});*/
+
 router.get('/:book', function get (req, res, next) {
     var user_id = req.query.user_id;
-  getModel().read(req.params.book, function (err, entity) {
-    if (err) {
-      return next(err);
-    }
-      if(entity.user_buy.indexOf(user_id) > -1 ){
-          entity.is_buy = 1;
-          entity.links_download = 'https://ebook-1310.appspot.com/libs/books/books-'+req.params.book+'.zip';
-      }
-      else {
-          entity.is_buy = 0;
-      }
-      var books_proty  = [];
-      getModel().list_chapter_by_book_id(req.params.book,10, req.query.pageToken,function (err, entities,  cursor) {
-          if (err) {
-              return next(err);
-          }
-
-          var chapter_ids = {
-              items: entities,
-              nextPageToken: cursor
-          };
-          if(entities){
-              /*Get quiz*/
-              entity.chapter_ids = chapter_ids;
-              for(var key in entity.chapter_ids.items){
-                  //Get quiz//
-                  getModel().list_quiz(entity.chapter_ids.items[key].id,10, req.query.pageToken, function (err, quizs, cursor_page) {
-                      if (err) {
-                          return next(err);
-                      }
-                      var quiz_id = {
-                          items: quizs,
-                          nextPageToken: cursor_page
-                      };
-                      entity.chapter_ids.items[key].quiz_ids = quiz_id;
-                      /*Check user by*/
-                      books_proty.push(entity);
-
-                      /*End user by*/
-
-                  });
-
-
-              }
-          }
-      });
-
-      res.json(books_proty);
-  });
+    var book_id = req.params.book;
+    snack.quizs(book_id, user_id, function(err, result) {
+        if(err){
+            console.log(err);
+        }else {
+            res.json(result);
+        }
+    });
 });
 
 /**
@@ -178,12 +293,12 @@ router.get('/:book', function get (req, res, next) {
  * Update a book.
  */
 router.put('/:book', function update (req, res, next) {
-  getModel().update(req.params.book, req.body, function (err, entity) {
-    if (err) {
-      return next(err);
-    }
-    res.json(entity);
-  });
+    getModel().update(req.params.book, req.body, function (err, entity) {
+        if (err) {
+            return next(err);
+        }
+        res.json(entity);
+    });
 });
 
 /**
@@ -192,25 +307,25 @@ router.put('/:book', function update (req, res, next) {
  * Delete a book.
  */
 router.delete('/:book', function _delete (req, res, next) {
-  getModel().delete(req.params.book, function (err) {
-    if (err) {
-      return next(err);
-    }
-    res.status(200).send('OK');
-  });
+    getModel().delete(req.params.book, function (err) {
+        if (err) {
+            return next(err);
+        }
+        res.status(200).send('OK');
+    });
 });
 
 /**
  * Errors on "/api/books/*" routes.
  */
 router.use(function handleRpcError (err, req, res, next) {
-  // Format error and forward to generic error handler for logging and
-  // responding to the request
-  err.response = {
-    message: err.message,
-    internalCode: err.code
-  };
-  next(err);
+    // Format error and forward to generic error handler for logging and
+    // responding to the request
+    err.response = {
+        message: err.message,
+        internalCode: err.code
+    };
+    next(err);
 });
 
 module.exports = router;

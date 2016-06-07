@@ -132,6 +132,7 @@ function update (id, data, cb) {
 // [END update]
 
 function read (id, cb) {
+
   var key = ds.key([kind, parseInt(id, 10)]);
   ds.get(key, function (err, entity) {
     if (err) {
@@ -146,7 +147,8 @@ function read (id, cb) {
     cb(null, fromDatastore(entity));
   });
 }
-function list_categories(id,limit, token, cb) {
+function list_categories(id, limit, token, cb) {
+
   if(id != undefined){
 
     var key = ds.key(['categories', parseInt(id)]);

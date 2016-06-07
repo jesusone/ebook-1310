@@ -19,6 +19,8 @@ var config = require('./config');
 
 var app = express();
 
+
+
 app.disable('etag');
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');

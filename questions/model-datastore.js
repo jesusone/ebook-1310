@@ -88,38 +88,23 @@ function toDatastore (obj, nonIndexed) {
 // return per page. The ``token`` argument allows requesting additional
 // pages. The callback is invoked with ``(err, books, nextPageToken)``.
 // [START list]
-function list (limit, token, cb) {
-  var q = ds.createQuery([kind])
-    .limit(limit)
-    .order('name')
-    .start(token);
-
-  ds.runQuery(q, function (err, entities, nextQuery) {
+function read (id, cb) {
+  var key = ds.key([kind, parseInt(id, 10)]);
+  console.log(key);
+  ds.get(key, function (err, entity) {
     if (err) {
       return cb(err);
     }
-    var hasMore = entities.length === limit ? nextQuery.startVal : false;
-    cb(null, entities.map(fromDatastore), hasMore);
-  });
-}
-function questions_childen(id,limit, token, cb) {
-
-  var q = ds.createQuery(['questions'])
-    .filter('parent_id', '=' ,  id)
-    .filter('is_parents', '=' ,  '1')
-    .limit(limit)
-    .order('parent_id');
-
-  ds.runQuery(q, function (err, entities, nextQuery) {
-    if (err) {
-      return cb(err);
+    if (!entity) {
+      return cb({
+        code: 404,
+        message: 'Not found'
+      });
     }
-    console.log(nextQuery);
-    var hasMore = entities.length === limit ? true : false;
-    cb(null, entities.map(fromDatastore), hasMore);
+    cb(null, fromDatastore(entity));
   });
-
 }
+
 // [END list]
 
 // Creates a new book or updates an existing book with new data. The provided
@@ -151,6 +136,7 @@ function update (id, data, cb) {
 
 function read (id, cb) {
   var key = ds.key([kind, parseInt(id, 10)]);
+  console.log(key);
   ds.get(key, function (err, entity) {
     if (err) {
       return cb(err);
@@ -169,14 +155,25 @@ function _delete (id, cb) {
   var key = ds.key([kind, parseInt(id, 10)]);
   ds.delete(key, cb);
 }
+function list (limit, token, cb) {
+  var q = ds.createQuery([kind])
+      .limit(limit)
+      .start(token);
 
+  ds.runQuery(q, function (err, entities, nextQuery) {
+    if (err) {
+      return cb(err);
+    }
+    var hasMore = entities.length === limit ? nextQuery.startVal : false;
+    cb(null, entities.map(fromDatastore), hasMore);
+  });
+}
 // [START exports]
 module.exports = {
   create: function (data, cb) {
     update(null, data, cb);
   },
   read: read,
-  questions_childen: questions_childen,
   update: update,
   delete: _delete,
   list: list

@@ -20,7 +20,7 @@ var config = require('../config');
 var ds = gcloud.datastore({
   projectId: config.get('GCLOUD_PROJECT')
 });
-var kind = 'quiz';
+var kind = 'quizs';
 // [END config]
 
 // Translates from Datastore's entity format to
@@ -154,7 +154,8 @@ function update_quiz_question (id, data, cb) {
 }
 // [END update]
 
-function read (id, cb) {
+
+function DbReadQuizDetail(id, cb) {
   var key = ds.key([kind, parseInt(id, 10)]);
   ds.get(key, function (err, entity) {
     if (err) {
@@ -174,6 +175,23 @@ function _delete (id, cb) {
   var key = ds.key([kind, parseInt(id, 10)]);
   ds.delete(key, cb);
 }
+function DbQuestionDetailByQuizID(id,limit, token, cb) {
+
+  var q = ds.createQuery(['questions'])
+      .filter('is_parents', '=' ,  '1')
+      .limit(limit)
+      .order('parent_id');
+
+  ds.runQuery(q, function (err, entities, nextQuery) {
+    if (err) {
+      return cb(err);
+    }
+    console.log(nextQuery);
+    var hasMore = entities.length === limit ? true : false;
+    cb(null, entities.map(fromDatastore), hasMore);
+  });
+
+}
 
 // [START exports]
 module.exports = {
@@ -183,8 +201,8 @@ module.exports = {
   create_quiz_questions: function (data, cb) {
     update_quiz_question(null, data, cb);
   },
-  read: read,
-
+  DbReadQuizDetail: DbReadQuizDetail,
+  DbQuestionDetailByQuizID: DbQuestionDetailByQuizID,
   update: update,
   delete: _delete,
   list: list

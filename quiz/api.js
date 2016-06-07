@@ -16,6 +16,8 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var config = require('../config');
+var async = require('async');
+
 
 function getModel () {
   return require('./model-' + config.get('DATA_BACKEND'));
@@ -101,14 +103,160 @@ router.post('/add_questions/', function insert (req, res, next) {
 /**
  * GET /api/books/:id
  *
- * Retrieve a book.
+ * Retrieve a quiz.
  */
-router.get('/:book', function get (req, res, next) {
-  getModel().read(req.params.book, function (err, entity) {
+
+var snack = {};
+var snack2 = {};
+snack.QuizDetailts = function(id, user_id, callback) {
+  var id = parseInt(id);
+  if (!isNaN(id)) {
+    getModel().DbReadQuizDetail(id, function(err, entity) {
+      if (err) {
+        console.log(err);
+        return callback(err);
+      }
+
+      console.log('===============BOOKDETAIL=====================');
+      console.log(entity);
+      console.log('=============END BOOKDETAIL===================');
+      callback(null, entity);
+    });
+  }
+
+}
+snack2.GetBookById  = function(book_id, callback) {
+
+  if (!isNaN(parseInt(book_id))) {
+
+    getModel().list_books(book_id, 10, true, function(err, entities, cursor) {
+      if (err) {
+        return callback(err);
+      }
+
+      callback(null, entities);
+    });
+  }
+}
+snack2.GetChapterById = function(id, callback) {
+  if (!isNaN(parseInt(id))) {
+    getModel().ChapterDetailByID(id, 10, true, function(err, entities, cursor) {
+      if (err) {
+        return callback(err);
+      }
+      /* console.log("======================CHAPTER=================");
+       console.log(entities);
+       console.log(id);
+       console.log("======================END CHAPTER=================");*/
+      callback(null, entities);
+    });
+  }
+}
+snack2.QuestionDetailByQuizID = function(id, callback){
+  getModel().DbQuestionDetailByQuizID(id, 10, true, function(err, entities, cursor){
     if (err) {
-      return next(err);
+      return callback(err);
     }
-    res.json(entity);
+    console.log("======================CHAPTER LIST=================");
+    console.log(entities);
+    console.log("======================END CHAPTER LIST==================");
+    callback(null, entities);
+  });
+
+}
+snack2.ListQuizsByChapterID = function(id, callback){
+
+  getModel().DbQuizsByChapterId(id,10,true,function(err, entities, cursor){
+    var lisquizs = {
+      items:entities,
+      nextPageToken:false
+    }
+    callback(null, lisquizs);
+
+  });
+
+}
+snack.QuestionsByQuizID = function(quiz_id, user_id, callback) {
+  snack.QuizDetailts(quiz_id, user_id, function(err, result) {
+    var question_ids = result.question_id.split(',');
+    var questions = {
+        items:'',
+        nextPageToken:false
+    }
+    snack2.QuestionDetailByQuizID(quiz_id,function(err, chapterResult) {
+      if (err) {
+        return callback(err);
+      }
+      questions.items = chapterResult;
+      result.question_id = questions;
+       console.log("======================CHAPTER HUNG=================");
+       console.log(chapterResult);
+       console.log("======================END CHAPTER HUNG=================");
+
+      callback(null, result);
+    });
+
+
+
+  });
+}
+snack2.ListQuiz = function(cat_id, callback) {
+  /* var test = {'name':'Chautrieu'};
+   callback(null, test);
+   return false;*/
+  /* console.log("------------Quiz ID---------");*/
+  for(var key in cat_id){
+    var cat_id = cat_id[key];
+  }
+
+  getModel().DbQuizsByChapterId(cat_id,10,true,function(err, entities, cursor){
+    var lisquizs = {
+      items:entities,
+      nextPageToken:false
+    }
+    /* console.log("------------ListQuiz MAP ROI---------");
+     console.log(lisquizs);
+     console.log("------------END ListQuiz---------");*/
+    callback(null, lisquizs);
+
+  });
+
+
+
+}
+snack.Question = function(quiz_id, user_id, callback) {
+  snack.QuestionsByQuizID(quiz_id, user_id, function(err, result) {
+    if(err){
+      return callback(err)
+    }else {
+      return callback(null, result);
+    }
+
+  });
+}
+async.parallel(snack, function(err, results) {
+  console.log('REPONSIVE');
+  console.log(result);
+  res.json(results);
+});
+
+
+router.get('/:book', function get (req, res, next) {
+  var user_id = req.query.user_id;
+  var book_id = req.params.book;
+  snack.Question(book_id, user_id, function(err, result) {
+    if(result){
+      res.json(result);
+
+      return false;
+    }
+
+    return false;
+    if(err){
+      console.log(err);
+    }else {
+      return res.json(result);
+    }
   });
 });
 

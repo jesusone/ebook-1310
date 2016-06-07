@@ -16,6 +16,7 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var config = require('../config');
+var bienTrungGian='abc';
 
 function getModel () {
   return require('./model-' + config.get('DATA_BACKEND'));

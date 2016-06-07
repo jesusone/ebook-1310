@@ -38,7 +38,7 @@ router.use(function (req, res, next) {
  * Display a page of books (up to ten at a time).
  */
 router.get('/', function list (req, res, next) {
-  getModel().list(10, req.query.pageToken, function (err, entities, cursor) {
+  getModel().listBooks(10, req.query.pageToken, function (err, entities, cursor) {
     if (err) {
       return next(err);
     }

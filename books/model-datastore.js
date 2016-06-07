@@ -88,11 +88,25 @@ function toDatastore (obj, nonIndexed) {
 // return per page. The ``token`` argument allows requesting additional
 // pages. The callback is invoked with ``(err, books, nextPageToken)``.
 // [START list]
-function list (limit,token, cb) {
-  var q = ds.createQuery([kind])
-    .limit(limit)
-    .order('name')
-    .start(token);
+function listBooks (cat_id,limit,token, cb) {
+  if(cat_id !=''){
+    console.log(cat_id);
+    console.log(typeof  cat_id);
+    var q = ds.createQuery([kind])
+        .limit(limit)
+        .filter('cat_id', '=' ,  cat_id)
+        .start(token)
+        .order('cat_id');
+        /*.order('name');*/
+
+  }
+  else {
+    var q = ds.createQuery([kind])
+        .limit(limit)
+        .order('name')
+        .start(token);
+  }
+
 
   ds.runQuery(q, function (err, entities, nextQuery) {
     if (err) {
@@ -102,12 +116,12 @@ function list (limit,token, cb) {
     cb(null, entities.map(fromDatastore), hasMore);
   });
 }
-function list_chapter_by_book_id(id,limit, token, cb) {
+function DbChapterDetailByID(id,limit, token, cb) {
 
   var q = ds.createQuery(['chapters'])
-    .filter('book_id', '=' ,  id)
-    .limit(limit)
-    .order('book_id')
+      .filter('book_id', '=' ,  id)
+      .limit(limit)
+      .order('book_id')
 
   ds.runQuery(q, function (err, entities, nextQuery) {
     if (err) {
@@ -121,7 +135,7 @@ function list_chapter_by_book_id(id,limit, token, cb) {
 
 }
 
-function list_quiz(id,limit, token, cb) {
+function DbQuizsByChapterId(id,limit, token, cb) {
   if(id != undefined){
     var q = ds.createQuery(['quizs'])
         .filter('chapter_id', '=' ,  id.toString())
@@ -138,6 +152,7 @@ function list_quiz(id,limit, token, cb) {
     });
   }
 }
+
 
 
 // [END list]
@@ -197,10 +212,10 @@ module.exports = {
     update(null, data, cb);
   },
   read: read,
-  list_chapter_by_book_id: list_chapter_by_book_id,
-  list_quiz: list_quiz,
+  DbChapterDetailByID: DbChapterDetailByID,
+  DbQuizsByChapterId: DbQuizsByChapterId,
   update: update,
   delete: _delete,
-  list: list
+  listBooks: listBooks
 };
 // [END exports]
