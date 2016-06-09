@@ -183,6 +183,21 @@ function list_books(id,limit, token, cb) {
     });
   }
 }
+function dbGetBookByCatId(id,limit, token, cb) {
+  if(id != undefined){
+    var q = ds.createQuery(['books'])
+        .filter('cat_id', '=' ,  id.toString())
+        .limit(limit)
+    ds.runQuery(q, function (err, entities, nextQuery) {
+      if (err) {
+        return cb(err);
+      }
+      console.log(nextQuery);
+      var hasMore = entities.length === limit ? true : false;
+      cb(null, entities.map(fromDatastore), hasMore);
+    });
+  }
+}
 function list_chapter(id,limit, token, cb) {
   if(id != undefined){
 
@@ -215,6 +230,7 @@ module.exports = {
   list_categories: list_categories,
   list_books: list_books,
   list_chapter: list_chapter,
+  dbGetBookByCatId: dbGetBookByCatId,
   update: update,
   delete: _delete,
   list: list

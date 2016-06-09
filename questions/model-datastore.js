@@ -44,29 +44,6 @@ function fromDatastore (obj) {
   return obj.data;
 }
 
-// Translates from the application's format to the datastore's
-// extended entity property format. It also handles marking any
-// specified properties as non-indexed. Does not translate the key.
-//
-// Application format:
-//   {
-//     id: id,
-//     property: value,
-//     unindexedProperty: value
-//   }
-//
-// Datastore extended format:
-//   [
-//     {
-//       name: property,
-//       value: value
-//     },
-//     {
-//       name: unindexedProperty,
-//       value: value,
-//       excludeFromIndexes: true
-//     }
-//   ]
 function toDatastore (obj, nonIndexed) {
   nonIndexed = nonIndexed || [];
   var results = [];
@@ -168,12 +145,52 @@ function list (limit, token, cb) {
     cb(null, entities.map(fromDatastore), hasMore);
   });
 }
+/*DbAnswerDetailByID*/
+function  DbAnswerDetailByID(id,limit, token, cb) {
+  if(id != undefined) {
+    var q = ds.createQuery(['answers'])
+        .filter('question_id', '=' ,  id.toString())
+        .limit(limit)
+        .order('question_id')
+
+    ds.runQuery(q, function (err, entities, nextQuery) {
+      if (err) {
+        return cb(err);
+      }
+      console.log(nextQuery);
+      var hasMore = entities.length === limit ? true : false;
+      cb(null, entities.map(fromDatastore), hasMore);
+
+    });
+  }
+}
+/*DbBlockDetailByID*/
+function  DbBlockDetailByID(id,limit, token, cb) {
+  if(id != undefined) {
+    var q = ds.createQuery(['questionsblocks'])
+        .filter('question_id', '=' ,  id.toString())
+        .limit(limit)
+        .order('question_id')
+
+    ds.runQuery(q, function (err, entities, nextQuery) {
+      if (err) {
+        return cb(err);
+      }
+      console.log(nextQuery);
+      var hasMore = entities.length === limit ? true : false;
+      cb(null, entities.map(fromDatastore), hasMore);
+
+    });
+  }
+}
 // [START exports]
 module.exports = {
   create: function (data, cb) {
     update(null, data, cb);
   },
   read: read,
+  DbAnswerDetailByID: DbAnswerDetailByID,
+  DbBlockDetailByID: DbBlockDetailByID,
   update: update,
   delete: _delete,
   list: list

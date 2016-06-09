@@ -77,7 +77,6 @@ snack.menuItem = function(menu_id, user_id, callback) {
         console.log(err);
         return callback(err);
       }
-      console.log(entity);
       callback(null, entity);
     });
   }
@@ -130,108 +129,29 @@ snack.Categories = function(menu_id, user_id, callback) {
     });
   });
 }
-snack2.ListBooks = function(cat_id, user_id, callback) {
-  console.log(cat_id);
-  var book_ids = cat_id.split(',');
-
-  var books = {
-    items:[],
-    nextPageToken:false
-  }
-
-  async.map(book_ids,snack2.GetBookById,function(err, cb) {
-    for(var i = 0; i < cb.length; i++){
-      var e = cb[i];
-      for(var j = 0; j < e.length; j++){
-        if(e[j] != null){
-          books.items.push(e[j]);
-        }
-      }
+snack2.ListBooksByCategoryId = function(category, callback) {
+  var catId = category.id;
+  getModel().dbGetBookByCatId(catId, 10, true, function(err, entities, cursor) {
+    var books = {
+      items: entities,
+      nextPageToken:false
     }
-    callback(null, books);
+    category.book_ids = books;
+    if (err) {
+      return callback(err);
+    }
+    callback(null, entities);
   });
 }
 snack.books = function(menu_id, user_id, callback) {
   snack.Categories(menu_id, user_id, function(err, result) {
-
-    for(var key in result.cat_ids.items){
-
-     /* snack2.ListBooks(result.cat_ids.items[key].book_ids,user_id,function(err, books){
-        result.cat_ids.items[key].book_ids = books;
-
-      });*/
-
-      if(key == 0){
-        console.log('=========VAO KEY 0===========');
-        result.cat_ids.items[0].book_ids = {'items':[
-          {
-            "id": 5706163895140352,
-            "description": "Lý",
-            "oderby": "1",
-            "rate": "36",
-            "isbanner": "1",
-            "role": "1,2,3,4,5",
-            "user_buy": "",
-            "price": "50000",
-            "view": "12",
-            "name": "Hoa",
-            "cat_id": "5644406560391168",
-            "chapter_id": "5634612826996736,5657382461898752,5674368789118976",
-            "author": "Chau Trieu",
-            "conver": "http://cdn.online-convert.com/images/image-converter.png",
-            "is_buy": 0
-          },
-          {
-            "id": 5642779036221440,
-            "description": "Hóa",
-            "oderby": "1",
-            "rate": "36",
-            "isbanner": "1",
-            "points": "123",
-            "role": "1,2,3,4,5",
-            "user_buy": "5670405876482048",
-            "price": "12000",
-            "view": "12",
-            "name": "Hóa",
-            "cat_id": "5644406560391168",
-            "chapter_id": "5713573250596864,5657382461898752,5674368789118976",
-            "author": "Chau Trieu",
-            "conver": "http://cdn.online-convert.com/images/image-converter.png",
-            "is_buy": 0
-          }
-        ]}
-        console.log('=========jehshshshs===========');
-        console.log( result.cat_ids.items[0].book_ids);
-      }
-
-      if(key == 1){
-        result.cat_ids.items[1].book_ids = {'items':[
-          {
-            "id": 5733311175458816,
-            "description": "Toán",
-            "oderby": "1",
-            "rate": "36",
-            "isbanner": "1",
-            "role": "1,2,3,4,5",
-            "user_buy": "",
-            "price": "10000",
-            "view": "12",
-            "name": "Toán",
-            "chapter_id": "5759409141579776,5710999223009280,5641142922117120,5634612826996736,5700239927279616,5682747733442560",
-            "author": "Chau Trieu",
-            "conver": "http://cdn.online-convert.com/images/image-converter.png",
-            "is_buy": 0
-          },
-        ]}
-      }
-
-    }
-    if(err){
-      return callback(err)
-    }else {
-      return callback(null, result);
-    }
-
+      async.map(result.cat_ids.items,snack2.ListBooksByCategoryId,function(err, results){
+        if(err){
+          callback(err);
+        }else{
+          callback(null,result);
+        }
+      });
   });
 }
 async.parallel(snack, function(err, results) {
@@ -244,17 +164,10 @@ router.get('/:book', function get(req, res, next) {
   var user_id = req.query.user_id;
   var menu_id = req.params.book;
   snack.books(menu_id, user_id, function(err, result) {
-    if(result){
-      res.json(result);
-
-      return false;
-    }
-
-    return false;
     if(err){
       console.log(err);
     }else {
-      return res.json(result);
+       res.json(result);
     }
   });
 

@@ -30,38 +30,6 @@ router.use(bodyParser.urlencoded({extended: false}));
 
 
 
-/**
- * GET /api/books
- *
- * Retrieve a page of books (up to ten at a time).
- */
-
-router.get('/', function list (req, res, next) {
-    var user_id = req.query.user_id;
-    var cat_id = (req.query.cat_id) ? req.query.cat_id : '';
-    getModel().listBooks(cat_id,10, req.query.pageToken, function (err, entities, cursor) {
-        if (err) {
-            return next(err);
-        }
-        if(entities){
-
-            for(var key in entities){
-                if(entities[key].user_buy.indexOf(user_id) > -1 ){
-                    entities[key].is_buy = 1;
-                }
-                else {
-                    entities[key].is_buy = 0;
-                }
-            }
-            res.json({
-                items: entities,
-                nextPageToken: cursor
-            });
-            return false;
-        }
-
-    });
-});
 
 
 /**
@@ -88,6 +56,7 @@ router.post('/', function insert (req, res, next) {
 var snack = {};
 var snack2 = {};
 var snack3 = {};
+
 snack.BookDetailts = function(id, user_id, callback) {
     var id = parseInt(id);
     if (!isNaN(id)) {
@@ -131,10 +100,6 @@ snack2.GetChapterById = function(id, callback) {
             if (err) {
                 return callback(err);
             }
-           /* console.log("======================CHAPTER=================");
-            console.log(entities);
-            console.log(id);
-            console.log("======================END CHAPTER=================");*/
             callback(null, entities);
         });
     }
@@ -144,9 +109,6 @@ snack2.ChapterDetailBookID = function(id, callback){
        if (err) {
            return callback(err);
        }
-    /*   console.log("======================CHAPTER LIST=================");
-       console.log(entities);
-       console.log("======================END CHAPTER LIST==================");*/
        callback(null, entities);
    });
 
@@ -163,30 +125,6 @@ snack2.ListQuizsByChapterID = function(id, callback){
     });
 
 }
-
-/*snack.Chapters = function(book_id, user_id, callback) {
-    snack.BookDetailts(book_id, user_id, function(err, result) {
-        var chapter_ids = result.chapter_id.split(',');
-        var chapters = {
-            items:'',
-            nextPageToken:false
-        }
-        snack2.ChapterDetailBookID(book_id,function(err, chapterResult) {
-            if (err) {
-                return callback(err);
-            }
-            chapters.items = chapterResult;
-            result.chapter_id = chapters;
-            console.log("======================CHAPTER HUNG=================");
-            console.log(result);
-            console.log("======================END CHAPTER HUNG=================");
-            callback(null, result);
-        });
-
-
-
-    });
-}*/
 snack.Chapters = function(book_id, user_id, callback) {
     snack.BookDetailts(book_id, user_id, function(err, result) {
         var chapter_ids = result.chapter_id.split(',');
@@ -200,20 +138,8 @@ snack.Chapters = function(book_id, user_id, callback) {
             }
             chapters.items = chapterResult;
             result.chapter_id = chapters;
-           /* console.log("======================CHAPTER HUNG=================");
-            console.log(result);
-            console.log("======================END CHAPTER HUNG=================");*/
-
-
-               /* console.log("======================Quizi ID BY ALL =================");
-                console.log(result.chapter_id.items[key].quiz_id);
-                console.log("======================END Quizi ID BY ALL=================");*/
                 callback(null, result);
-
-
         });
-
-
 
     });
 }
@@ -233,48 +159,66 @@ snack2.ListQuiz = function(chapteritem, callback) {
     }
 
 }
-snack2.getInfo = function(data, callback) {
-    console.log('====================DATA =====================');
-    console.log(data);
-    callback(null, data);
-    console.log('====================DATA =====================');
-    return data;
-
-
-
-}
 
 snack.quizs = function(book_id, user_id, callback) {
     snack.Chapters(book_id, user_id, function(err, result) {
-        var app_quiz = [];
-        var temp = result;
          async.map(result.chapter_id.items,snack2.ListQuiz, function (err, quizsReslt) {
-            var temp = 0;
-             for(var i = 0; i < quizsReslt.length; i++){
-                 var item = quizsReslt[i];
-                 result.chapter_id.items.push(item);
-             }
-             console.log('====================quizsReslt =====================');
-             console.log(result);
              callback(null, result);
           });
-
-        if(err){
-            return callback(err)
-        }else {
-            return callback(null, result);
-        }
 
     });
 }
 
+var myboooks = {};
+myboooks.GetOrderByUserID = function(user_id,token,callback) {
+    getModel().DbGetBooksOrderbyId(user_id,10, token, function (err, entities, cursor) {
+        if (err) {
+            return next(err);
+        }
+         var mybooks= {
+            items: entities,
+            nextPageToken: cursor
+        };
+    });
+}
+/*=====================================MY BOOK====================================*/
+/**
+ * GET /api/books
+ *
+ * Retrieve a page of books (up to ten at a time).
+ */
 
-/*async.parallel(snack, function(err, results) {
-    console.log('REPONSIVE');
-    console.log(result);
-    res.json(results);
-});*/
+router.get('/', function list (req, res, next) {
+    var user_id = req.query.user_id;
+    var cat_id = (req.query.cat_id) ? req.query.cat_id : '';
+    var keyword = (req.query.keyword) ? req.query.keyword : '';
+    var request = {'cat_id':cat_id,'user_id':user_id,'keyword':keyword};
+    getModel().listBooks(request,10, req.query.pageToken, function (err, entities, cursor) {
+        if (err) {
+            return next(err);
+        }
+        if(entities){
 
+            for(var key in entities){
+                if(entities[key].user_buy.indexOf(user_id) > -1 ){
+                    entities[key].is_buy = 1;
+                    entities.links_download = 'https://ebook-1310.appspot.com/libs/books/books-'+id+'.zip';
+                }
+                else {
+                    entities[key].is_buy = 0;
+                }
+            }
+            res.json({
+                items: entities,
+                nextPageToken: cursor
+            });
+            return false;
+        }
+
+    });
+});
+
+/*====================================GET BOOKS DETAIL=================================*/
 router.get('/:book', function get (req, res, next) {
     var user_id = req.query.user_id;
     var book_id = req.params.book;

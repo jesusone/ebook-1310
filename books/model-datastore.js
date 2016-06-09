@@ -88,25 +88,34 @@ function toDatastore (obj, nonIndexed) {
 // return per page. The ``token`` argument allows requesting additional
 // pages. The callback is invoked with ``(err, books, nextPageToken)``.
 // [START list]
-function listBooks (cat_id,limit,token, cb) {
-  if(cat_id !=''){
-    console.log(cat_id);
-    console.log(typeof  cat_id);
-    var q = ds.createQuery([kind])
-        .limit(limit)
-        .filter('cat_id', '=' ,  cat_id)
-        .start(token)
-        .order('cat_id');
-        /*.order('name');*/
+function listBooks (request,limit,token, cb) {
+  console.log(request);
+  var q = ds.createQuery([kind]);
 
+  if(request.cat_id !=''){
+    q.filter('cat_id', '=' ,  cat_id);
   }
-  else {
-    var q = ds.createQuery([kind])
-        .limit(limit)
-        .order('name')
-        .start(token);
+  if(request.keyword !=''){
+  
+    q.filter('name', 'LIKE' ,  '%'+request.keyword+'%');
   }
+  q.start(token).order('cat_id').limit(limit);
+  ds.runQuery(q, function (err, entities, nextQuery) {
+    if (err) {
+      return cb(err);
+    }
+    var hasMore = entities.length === limit ? nextQuery.startVal : false;
+    cb(null, entities.map(fromDatastore), hasMore);
+  });
+}
+function listBooks (user_id,limit,token, cb) {
 
+  var q = ds.createQuery(['orders'])
+          .select('id')
+          .filter('user_id', '=' ,  user_id.toString())
+          .start(token)
+          .order('cat_id')
+          .limit(limit);
 
   ds.runQuery(q, function (err, entities, nextQuery) {
     if (err) {
@@ -214,6 +223,7 @@ module.exports = {
   read: read,
   DbChapterDetailByID: DbChapterDetailByID,
   DbQuizsByChapterId: DbQuizsByChapterId,
+  DbGetBooksOrderbyId: DbGetBooksOrderbyId,
   update: update,
   delete: _delete,
   listBooks: listBooks

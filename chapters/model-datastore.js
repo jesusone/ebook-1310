@@ -88,19 +88,37 @@ function toDatastore (obj, nonIndexed) {
 // return per page. The ``token`` argument allows requesting additional
 // pages. The callback is invoked with ``(err, books, nextPageToken)``.
 // [START list]
-function list (limit, token, cb) {
+function list (book_id,limit, token, cb) {
+
   var q = ds.createQuery([kind])
+     .filter('book_id', '=' ,  book_id)
     .limit(limit)
-    .order('oderby',{
-      descending: true
-    })
     .start(token);
+
 
   ds.runQuery(q, function (err, entities, nextQuery) {
     if (err) {
       return cb(err);
     }
-    var hasMore = entities.length === limit ? nextQuery.startVal : false;
+    console.log(nextQuery);
+    var hasMore = entities.length === limit ? true : false;
+    cb(null, entities.map(fromDatastore), hasMore);
+  });
+}
+function listQuizByChaID(book_id,limit, token, cb) {
+
+
+  var q = ds.createQuery(['quizs'])
+    .filter('chapter_id', '=' , book_id.toString())
+  /*  .limit(limit)
+    .start(token);*/
+
+  ds.runQuery(q, function (err, entities, nextQuery) {
+    if (err) {
+      return cb(err);
+    }
+    console.log(nextQuery);
+    var hasMore = entities.length === limit ? true : false;
     cb(null, entities.map(fromDatastore), hasMore);
   });
 }
@@ -193,7 +211,21 @@ function _delete (id, cb) {
   var key = ds.key([kind, parseInt(id, 10)]);
   ds.delete(key, cb);
 }
-
+function readBooks (id, cb) {
+  var key = ds.key(['books', parseInt(id, 10)]);
+  ds.get(key, function (err, entity) {
+    if (err) {
+      return cb(err);
+    }
+    if (!entity) {
+      return cb({
+        code: 404,
+        message: 'Not found'
+      });
+    }
+    cb(null, fromDatastore(entity));
+  });
+}
 // [START exports]
 module.exports = {
   create: function (data, cb) {
@@ -203,6 +235,7 @@ module.exports = {
   update: update,
   update_books: update_books,
   read_books: read_books,
+  listQuizByChaID: listQuizByChaID,
   delete: _delete,
   list: list
 };

@@ -16,6 +16,7 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var config = require('../config');
+var async = require('async');
 
 function getModel () {
   return require('./model-' + config.get('DATA_BACKEND'));
@@ -31,17 +32,63 @@ router.use(bodyParser.urlencoded({extended: false}));
  *
  * Retrieve a page of books (up to ten at a time).
  */
+var snack = {};
+snack.ChapterByID = function(items,callback){
 
-router.get('/', function list (req, res, next) {
-  getModel().list(10, req.query.pageToken, function (err, entities, cursor) {
+};
+
+snack.MapQuiz = function(items,callback){
+//
+  var chapter_id = items.id;
+  getModel().listQuizByChaID(chapter_id,10, true, function (err, entities, cursor) {
     if (err) {
       return next(err);
     }
-    res.json({
+    var quiz_list = {
       items: entities,
       nextPageToken: cursor
+    };
+    items.quiz_id = quiz_list;
+     callback(null,items);
+  });
+
+}
+snack.ListsChapters = function(book_id,user_id,token,callback){
+  getModel().list(book_id,10, token, function (err, entities, cursor) {
+    if (err) {
+      return next(err);
+    }
+    var chapters = {
+      items: entities,
+      nextPageToken: cursor
+    }
+    console.log('==========================');
+    console.log(chapters);
+    callback(null,chapters);
+  });
+}
+snack.RunApi = function(book_id,user_id,token,callback){
+  snack.ListsChapters(book_id,user_id,token,function(err,results){
+    console.log('==========RESULT=============');
+    console.log(results);
+    async.map(results.items,snack.MapQuiz,function(err,chapters){
+      callback(null,results);
     });
   });
+
+}
+router.get('/', function list (req, res, next) {
+  var user_id =  req.query.user_id;
+  var book_id =  req.query.book_id;
+  /*Check user in books*/
+  snack.RunApi(book_id, user_id, req.query.nextPageToken ,function(err, result) {
+    if(err){
+      console.log(err);
+    }else {
+      res.json(result);
+    }
+  });
+
 });
 
 /**
