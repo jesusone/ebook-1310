@@ -29,9 +29,6 @@ router.use(bodyParser.json());
 router.use(bodyParser.urlencoded({extended: false}));
 
 
-
-
-
 /**
  * POST /api/books
  *
@@ -45,8 +42,6 @@ router.post('/', function insert (req, res, next) {
         res.json(entity);
     });
 });
-/*==============Parallel=================*/
-/*==============End=================*/
 
 /**
  * GET /api/books/:id
@@ -171,6 +166,7 @@ snack.quizs = function(book_id, user_id, callback) {
 
 var myboooks = {};
 myboooks.GetOrderByUserID = function(user_id,token,callback) {
+
     getModel().DbGetBooksOrderbyId(user_id,10, token, function (err, entities, cursor) {
         if (err) {
             return next(err);
@@ -179,6 +175,18 @@ myboooks.GetOrderByUserID = function(user_id,token,callback) {
             items: entities,
             nextPageToken: cursor
         };
+        console.log('=============DbGetBooksOrderbyId=============');
+        console.log(entities);
+        callback(null,mybooks)
+    });
+}
+
+myboooks.ApiRun = function(req,callback){
+
+    myboooks.GetOrderByUserID(req.user_id,req.token,function(err,mybooks){
+        console.log('=============RESULT=============');
+        console.log(mybooks);
+        callback(null,mybooks);
     });
 }
 /*=====================================MY BOOK====================================*/
@@ -192,30 +200,21 @@ router.get('/', function list (req, res, next) {
     var user_id = req.query.user_id;
     var cat_id = (req.query.cat_id) ? req.query.cat_id : '';
     var keyword = (req.query.keyword) ? req.query.keyword : '';
-    var request = {'cat_id':cat_id,'user_id':user_id,'keyword':keyword};
-    getModel().listBooks(request,10, req.query.pageToken, function (err, entities, cursor) {
-        if (err) {
-            return next(err);
+    var token = (req.query.nextPageToken) ? req.query.nextPageToken : '';
+    var request = {
+        'cat_id':cat_id,
+        'user_id':user_id,
+        'keyword':keyword,
+        'token':token
+    };
+    myboooks.ApiRun(request, function(err, result) {
+        if(err){
+            console.log(err);
+        }else {
+            res.json(result);
         }
-        if(entities){
-
-            for(var key in entities){
-                if(entities[key].user_buy.indexOf(user_id) > -1 ){
-                    entities[key].is_buy = 1;
-                    entities.links_download = 'https://ebook-1310.appspot.com/libs/books/books-'+id+'.zip';
-                }
-                else {
-                    entities[key].is_buy = 0;
-                }
-            }
-            res.json({
-                items: entities,
-                nextPageToken: cursor
-            });
-            return false;
-        }
-
     });
+
 });
 
 /*====================================GET BOOKS DETAIL=================================*/

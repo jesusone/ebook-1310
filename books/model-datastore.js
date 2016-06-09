@@ -108,21 +108,24 @@ function listBooks (request,limit,token, cb) {
     cb(null, entities.map(fromDatastore), hasMore);
   });
 }
-function listBooks (user_id,limit,token, cb) {
+function DbGetBooksOrderbyId (user_id,limit,token, cb) {
 
   var q = ds.createQuery(['orders'])
-          .select('id')
-          .filter('user_id', '=' ,  user_id.toString())
-          .start(token)
+          .select('book_id')
+          .filter('user_id', '=' , user_id)
+         /* .start(token)
           .order('cat_id')
-          .limit(limit);
+          .limit(limit);*/
 
   ds.runQuery(q, function (err, entities, nextQuery) {
+    console.log(err); return false;
     if (err) {
       return cb(err);
     }
-    var hasMore = entities.length === limit ? nextQuery.startVal : false;
+    console.log(nextQuery);
+    var hasMore = entities.length === limit ? true : false;
     cb(null, entities.map(fromDatastore), hasMore);
+
   });
 }
 function DbChapterDetailByID(id,limit, token, cb) {
