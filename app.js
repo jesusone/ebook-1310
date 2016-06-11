@@ -38,6 +38,7 @@ app.use('/api/users', require('./users/api'));
 app.use('/api/quiz', require('./quiz/api'));
 app.use('/api/questions', require('./questions/api'));
 app.use('/api/orders', require('./orders/api'));
+app.use('/api/transitions', require('./transitions/api'));
 
 /*Login Amin*/
 app.use('/users', require('./users/crud'));

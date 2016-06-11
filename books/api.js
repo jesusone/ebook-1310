@@ -198,23 +198,24 @@ myboooks.ApiRun = function(req,callback){
 
 router.get('/', function list (req, res, next) {
     var user_id = req.query.user_id;
-    var cat_id = (req.query.cat_id) ? req.query.cat_id : '';
-    var keyword = (req.query.keyword) ? req.query.keyword : '';
-    var token = (req.query.nextPageToken) ? req.query.nextPageToken : '';
+    var token = (req.query.nextPageToken) ? req.query.nextPageToken : false;
     var request = {
-        'cat_id':cat_id,
+        'limit':10,
         'user_id':user_id,
-        'keyword':keyword,
         'token':token
     };
-    myboooks.ApiRun(request, function(err, result) {
-        if(err){
-            console.log(err);
-        }else {
-            res.json(result);
-        }
-    });
 
+    getModel().DbGetBooksOrderbyId(request, function (err, entities, cursor) {
+        if (err) {
+            return next(err);
+        }
+        var mybooks= {
+            items: entities,
+            nextPageToken: cursor
+        };
+
+        res.json(mybooks);
+    });
 });
 
 /*====================================GET BOOKS DETAIL=================================*/

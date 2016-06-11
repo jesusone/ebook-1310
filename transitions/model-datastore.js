@@ -20,7 +20,7 @@ var config = require('../config');
 var ds = gcloud.datastore({
   projectId: config.get('GCLOUD_PROJECT')
 });
-var kind = 'books';
+var kind = 'categories';
 // [END config]
 
 // Translates from Datastore's entity format to
@@ -88,18 +88,12 @@ function toDatastore (obj, nonIndexed) {
 // return per page. The ``token`` argument allows requesting additional
 // pages. The callback is invoked with ``(err, books, nextPageToken)``.
 // [START list]
-function listBooks (request,limit,token, cb) {
-  console.log(request);
-  var q = ds.createQuery([kind]);
+function list (limit, token, cb) {
+  var q = ds.createQuery([kind])
+    .limit(limit)
+    .order('name')
+    .start(token);
 
-  if(request.cat_id !=''){
-    q.filter('cat_id', '=' ,  cat_id);
-  }
-  if(request.keyword !=''){
-  
-    q.filter('name', 'LIKE' ,  '%'+request.keyword+'%');
-  }
-  q.start(token).order('cat_id').limit(limit);
   ds.runQuery(q, function (err, entities, nextQuery) {
     if (err) {
       return cb(err);
@@ -108,63 +102,6 @@ function listBooks (request,limit,token, cb) {
     cb(null, entities.map(fromDatastore), hasMore);
   });
 }
-function DbGetBooksOrderbyId (request, cb) {
-console.log('============');
-console.log(request);
-  var q = ds.createQuery(['orders'])
-      .filter('user_id', '=' , request.user_id.toString())
-          .start(request.token)
-          .limit(request.limit);
-
-  ds.runQuery(q, function (err, entities, nextQuery) {
-    if (err) {
-      return cb(err);
-    }
-    console.log(nextQuery);
-    var hasMore = entities.length === request.limit ? true : false;
-    cb(null, entities.map(fromDatastore), hasMore);
-
-  });
-}
-function DbChapterDetailByID(id,limit, token, cb) {
-
-  var q = ds.createQuery(['chapters'])
-      .filter('book_id', '=' ,  id)
-      .limit(limit)
-      .order('book_id')
-
-  ds.runQuery(q, function (err, entities, nextQuery) {
-    if (err) {
-      return cb(err);
-    }
-    console.log(nextQuery);
-    var hasMore = entities.length === limit ? true : false;
-     cb(null, entities.map(fromDatastore), hasMore);
-
-  });
-
-}
-
-function DbQuizsByChapterId(id,limit, token, cb) {
-  if(id != undefined){
-    var q = ds.createQuery(['quizs'])
-        .filter('chapter_id', '=' ,  id.toString())
-        .limit(limit)
-        .order('chapter_id');
-
-    ds.runQuery(q, function (err, entities, nextQuery) {
-      if (err) {
-        return cb(err);
-      }
-      console.log(nextQuery);
-      var hasMore = entities.length === limit ? true : false;
-      cb(null, entities.map(fromDatastore), hasMore);
-    });
-  }
-}
-
-
-
 // [END list]
 
 // Creates a new book or updates an existing book with new data. The provided
@@ -210,23 +147,38 @@ function read (id, cb) {
   });
 }
 
-
 function _delete (id, cb) {
   var key = ds.key([kind, parseInt(id, 10)]);
   ds.delete(key, cb);
 }
 
+function list_books_by_cat_id(id,limit, token, cb) {
+
+  var q = ds.createQuery(['books'])
+      .filter('cat_id', '=' , id)
+      .limit(limit)
+      .order('cat_id');
+
+  ds.runQuery(q, function (err, entities, nextQuery) {
+    if (err) {
+      return cb(err);
+    }
+    console.log(nextQuery);
+    var hasMore = entities.length === limit ? true : false;
+    cb(null, entities.map(fromDatastore), hasMore);
+  });
+
+}
+// [END list]
 // [START exports]
 module.exports = {
   create: function (data, cb) {
     update(null, data, cb);
   },
   read: read,
-  DbChapterDetailByID: DbChapterDetailByID,
-  DbQuizsByChapterId: DbQuizsByChapterId,
-  DbGetBooksOrderbyId: DbGetBooksOrderbyId,
+  list_books_by_cat_id: list_books_by_cat_id,
   update: update,
   delete: _delete,
-  listBooks: listBooks
+  list: list
 };
 // [END exports]
