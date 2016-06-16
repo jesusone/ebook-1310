@@ -15,7 +15,6 @@
 
 var gcloud = require('gcloud');
 var config = require('../config');
-
 // [START config]
 var ds = gcloud.datastore({
   projectId: config.get('GCLOUD_PROJECT')
@@ -119,6 +118,20 @@ function list_roles (limit, token, cb) {
     cb(null, entities.map(fromDatastore), hasMore);
   });
 }
+function CheckSoialID (id,  cb) {
+  console.log(typeof id);
+  var q = ds.createQuery([kind])
+    .filter('social_id', '=' , id)
+    .limit(1)
+
+
+  ds.runQuery(q, function (err, entities, nextQuery) {
+    if (err) {
+      return cb(err);
+    }
+    cb(null, entities.map(fromDatastore));
+  });
+}
 // [END list]
 
 // Creates a new book or updates an existing book with new data. The provided
@@ -204,6 +217,7 @@ module.exports = {
   update: update,
   delete: _delete,
   list_roles: list_roles,
+  CheckSoialID: CheckSoialID,
   list: list
 };
 // [END exports]

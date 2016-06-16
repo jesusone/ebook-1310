@@ -20,7 +20,7 @@ var config = require('../config');
 var ds = gcloud.datastore({
   projectId: config.get('GCLOUD_PROJECT')
 });
-var kind = 'categories';
+var kind = 'transitions';
 // [END config]
 
 // Translates from Datastore's entity format to
@@ -129,6 +129,28 @@ function update (id, data, cb) {
     }
   );
 }
+function DbupdateUser(id, data, cb) {
+
+
+  var key;
+  if (id) {
+    key = ds.key(['users', parseInt(id, 10)]);
+  } else {
+    key = ds.key('users');
+  }
+  var entity = {
+    key: key,
+    data: data
+  };
+
+  ds.save(
+    entity,
+    function (err) {
+      data.id = entity.key.id;
+      cb(err, err ? null : data);
+    }
+  );
+}
 // [END update]
 
 function read (id, cb) {
@@ -178,6 +200,7 @@ module.exports = {
   read: read,
   list_books_by_cat_id: list_books_by_cat_id,
   update: update,
+  DbupdateUser: DbupdateUser,
   delete: _delete,
   list: list
 };

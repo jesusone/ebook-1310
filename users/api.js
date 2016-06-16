@@ -17,6 +17,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var config = require('../config');
 
+
 function getModel () {
   return require('./model-' + config.get('DATA_BACKEND'));
 }
@@ -62,7 +63,20 @@ router.get('/', function list (req, res, next) {
  * Create a new book.
  */
 router.post('/', function insert (req, res, next) {
-  req.body.password = md5
+  var  social_id  =  req.body.social_id;
+  /*Check have social_id*/
+  getModel().CheckSoialID( social_id,  function (err, entities) {
+    if (err) {
+      return next(err);
+    }
+    if(entities){
+
+    }
+    res.json({
+      items: entities,
+    });
+  });
+  return false;
   getModel().create(req.body, function (err, entity) {
     if (err) {
       return next(err);

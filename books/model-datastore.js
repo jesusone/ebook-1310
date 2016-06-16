@@ -20,25 +20,17 @@ var config = require('../config');
 var ds = gcloud.datastore({
   projectId: config.get('GCLOUD_PROJECT')
 });
+
+/*Dataset*/
+var datastore = gcloud.datastore;
+var dataset = ds.dataset({
+  projectId: config.get('GCLOUD_PROJECT'),
+  apiEndpoint: 'http://localhost:8080'
+});
+
 var kind = 'books';
 // [END config]
 
-// Translates from Datastore's entity format to
-// the format expected by the application.
-//
-// Datastore format:
-//   {
-//     key: [kind, id],
-//     data: {
-//       property: value
-//     }
-//   }
-//
-// Application format:
-//   {
-//     id: id,
-//     property: value
-//   }
 function fromDatastore (obj) {
   obj.data.id = obj.key.id;
   return obj.data;
@@ -89,6 +81,12 @@ function toDatastore (obj, nonIndexed) {
 // pages. The callback is invoked with ``(err, books, nextPageToken)``.
 // [START list]
 function listBooks (request,limit,token, cb) {
+  var key = dataset.key([kind, 5642779036221440]);
+
+  transaction.get(key, function(err, entity) {
+    cb(null, entity, false);
+  });
+
   console.log(request);
   var q = ds.createQuery([kind]);
 

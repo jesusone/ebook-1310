@@ -50,12 +50,21 @@ router.get('/', function list (req, res, next) {
  * Create a new book.
  */
 router.post('/', function insert (req, res, next) {
+  var user_id = req.body.user_id;
+  var balances = {'balances':req.body.balances};
+
+
 
   getModel().create(req.body, function (err, entity) {
     if (err) {
       return next(err);
     }
-    res.json(entity);
+    getModel().DbupdateUser(user_id, balances, function (err, entity) {
+      if (err) {
+        return next(err);
+      }
+      res.json(entity);
+    });
   });
 });
 
