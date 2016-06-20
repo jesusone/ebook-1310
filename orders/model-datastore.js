@@ -126,6 +126,8 @@ function list_chapter_by_book_id(id,limit, token, cb) {
 // queued for background processing.
 // [START update]
 function update (id, data, cb) {
+  data.book_id = ds.key(['books', data.book_id]);
+
   var key;
   if (id) {
     key = ds.key([kind, parseInt(id, 10)]);
@@ -163,6 +165,47 @@ function read (id, cb) {
     cb(null, fromDatastore(entity));
   });
 }
+/*Updatebalances*/
+function Updatebalances (id,price, cb) {
+  var key = ds.key(['users' , parseInt(id, 10)]);
+  ds.get(key, function (err, entity) {
+    if (err) {
+      return cb(err);
+    }
+    if (!entity) {
+      return cb({
+        code: 404,
+        message: 'Not found'
+      });
+    }
+    var users = fromDatastore(entity);
+    var ba_current = users.balances;
+    var ba_update = parseInt(ba_current) - parseInt(price);
+    var ba_update = {'balances':ba_update};
+    /*Update Balances*/
+    var key;
+    if (id) {
+      key = ds.key(['users', parseInt(id, 10)]);
+    } else {
+      key = ds.key('users');
+    }
+    var dataupdate = {
+      key: key,
+      data: ba_update
+    };
+    console.log(dataupdate);
+
+    ds.save(
+        dataupdate,
+        function (err) {
+          ba_update.id = dataupdate.key.id;
+          cb(err, err ? null : ba_update);
+        }
+    );
+
+  });
+
+}
 
 function _delete (id, cb) {
   var key = ds.key([kind, parseInt(id, 10)]);
@@ -175,6 +218,7 @@ module.exports = {
     update(null, data, cb);
   },
   read: read,
+  Updatebalances: Updatebalances,
   list_chapter_by_book_id: list_chapter_by_book_id,
   update: update,
   delete: _delete,

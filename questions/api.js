@@ -185,7 +185,7 @@ router.get('/:book', function get (req, res, next) {
   var question = req.params.book;
   async.parallel([
         function(callback){
-            console.log('hole'+question);
+            console.log(question);
           var id = question;
             callback(null,id);
 

@@ -22,8 +22,10 @@ var ds = gcloud.datastore({
 });
 
 /*Dataset*/
+
 var datastore = gcloud.datastore;
-var dataset = ds.dataset({
+
+var dataset = datastore.dataset({
   projectId: config.get('GCLOUD_PROJECT'),
   apiEndpoint: 'http://localhost:8080'
 });
@@ -107,12 +109,10 @@ function listBooks (request,limit,token, cb) {
   });
 }
 function DbGetBooksOrderbyId (request, cb) {
-console.log('============');
-console.log(request);
   var q = ds.createQuery(['orders'])
       .filter('user_id', '=' , request.user_id.toString())
-          .start(request.token)
-          .limit(request.limit);
+      .start(request.token)
+      .limit(request.limit);
 
   ds.runQuery(q, function (err, entities, nextQuery) {
     if (err) {
@@ -154,7 +154,6 @@ function DbQuizsByChapterId(id,limit, token, cb) {
       if (err) {
         return cb(err);
       }
-      console.log(nextQuery);
       var hasMore = entities.length === limit ? true : false;
       cb(null, entities.map(fromDatastore), hasMore);
     });

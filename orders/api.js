@@ -26,34 +26,6 @@ var router = express.Router();
 // Automatically parse request body as JSON
 router.use(bodyParser.json());
 router.use(bodyParser.urlencoded({extended: false}));
-var multer = require('multer')({
-  inMemory: true,
-  fileSize: 5 * 1024 * 1024 // no larger than 5mb, you can change as needed.
-});
-
-router.post('/upload', multer.single('file'), function(req, res, next) {
-  if (!req.file) {
-    return res.status(400).send('No file uploaded.');
-  }
-
-  // Create a new blob in the bucket and upload the file data.
-  var blob = bucket.file(req.file.originalname);
-  var blobStream = blob.createWriteStream();
-
-  blobStream.on('error', function(err) {
-    return next(err);
-  });
-
-  blobStream.on('finish', function() {
-    // The public URL can be used to directly access the file via HTTP.
-    var publicUrl = format(
-        'https://storage.googleapis.com/%s/%s',
-        bucket.name, blob.name);
-    res.status(200).send(publicUrl);
-  });
-
-  blobStream.end(req.file.buffer);
-});
 
 /**
  * GET /api/books
@@ -74,20 +46,35 @@ router.get('/', function list (req, res, next) {
   });
 });
 
+/*=========================== API ORDER ===============================*/
 /**
  * POST /api/books
  *
  * Create a new book.
  */
 router.post('/', function insert (req, res, next) {
+   req.body.status = 1;
+  /*Check  Balances*/
+
   getModel().create(req.body, function (err, entity) {
     if (err) {
       return next(err);
     }
-    res.json(entity);
+    /*Create ok*/
+    if(entity){
+      /*Tru tien tai khoan*/
+      getModel().Updatebalances(req.body.user_id, req.body.price,function (err, userInfo) {
+      var  resApi = {
+        'code':'PIS200',
+        'balances':userInfo.balances
+       }
+        res.json(resApi);
+      });
+
+    }
   });
 });
-
+/*=========================== API ORDER ===============================*/
 /**
  * GET /api/books/:id
  *
